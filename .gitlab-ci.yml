@@ -8,10 +8,9 @@ stages:
 build:
   stage: build
   script:
-    - npm install -g yarn
     - yarn install
     - yarn build
-  when: always
+  when: manual
   # tags:
   #   - nodejs-runner
   #   - small-runner
