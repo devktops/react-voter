@@ -1,0 +1,60 @@
+image: node:14-alpine
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - npm install -g yarn
+    - yarn install
+    - yarn build
+  when: always
+  # tags:
+  #   - nodejs-runner
+  #   - small-runner
+  only:
+    - develop
+    - uat
+    - staging
+    - master
+    # - tags
+  # artifacts:
+  #   paths:
+  #     - build/
+  #     - node_modules/
+  #   expire_in: 1 week
+
+# test:
+#   stage: test
+#   script:
+#     - yarn test
+
+deploy-dev:
+  stage: deploy
+  image: alpine:latest
+  script:
+    - echo "Preparing ssh-agent"
+    - apk add --no-cache openssh-client
+    - 'which ssh-agent || ( apk add --no-cache openssh )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - touch ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - ssh-keyscan -H $DEVELOP_SERVER >> ~/.ssh/known_hosts
+    - echo "Finished ssh-agent"
+    - ssh -o StrictHostKeyChecking=no ubuntu@$DEVELOP_SERVER -t '/home/ubuntu/devops/deploy.sh'
+  only:
+    - develop
+  needs:
+    - build
+  when: on_success
+  
+  
+
+
+
